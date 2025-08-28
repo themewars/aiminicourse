@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { appLogo, companyName, MonthCost, serverURL, websiteURL, YearCost } from '@/constants';
 import axios from 'axios';
-import generatePDF from 'react-to-pdf';
+// import generatePDF from 'react-to-pdf';
 
 const PaymentSuccess = () => {
 
@@ -41,7 +41,7 @@ const PaymentSuccess = () => {
   const getTargetElement = () => document.getElementById('content-id');
 
   const handleDownload = () => {
-    generatePDF(getTargetElement, options);
+    // generatePDF(getTargetElement, options);
     toast({
       title: "Receipt Downloaded",
       description: "Your receipt has been downloaded successfully.",
