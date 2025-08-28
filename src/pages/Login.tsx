@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,13 @@ import axios from 'axios';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 import FacebookLogin from '@greatsumini/react-facebook-login';
+
+// Define JWT payload interface
+interface JWTPayload {
+  email?: string;
+  name?: string;
+  [key: string]: any;
+}
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -177,9 +184,9 @@ const Login = () => {
               width={400}
               onSuccess={async (credentialResponse) => {
                 // JWT payload properly typed for TypeScript compatibility
-                const decoded = jwtDecode(credentialResponse.credential) as { email?: string; name?: string };
-                const email = decoded.email || '';
-                const name = decoded.name || '';
+                const decoded = jwtDecode(credentialResponse.credential) as any;
+                const email = (decoded as any).email || '';
+                const name = (decoded as any).name || '';
                 const postURL = serverURL + '/api/social';
                 try {
                   setIsLoading(true);
