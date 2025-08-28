@@ -256,9 +256,9 @@ const Signup = () => {
               type='standard'
               width={400}
               onSuccess={async (credentialResponse) => {
-                const decoded = jwtDecode(credentialResponse.credential);
-                const email = decoded.email;
-                const name = decoded.name;
+                const decoded = jwtDecode(credentialResponse.credential) as any;
+                const email = decoded.email || '';
+                const name = decoded.name || '';
                 const postURL = serverURL + '/api/social';
                 try {
                   setIsLoading(true);
@@ -310,27 +310,27 @@ const Signup = () => {
                 setError('Internal Server Error');
               }}
               onProfileSuccess={async (response) => {
-                const email = response.email;
-                const name = response.name;
+                const email = response.email || '';
+                const name = response.name || '';
                 const postURL = serverURL + '/api/social';
                 try {
                   setIsLoading(true);
-                  const response = await axios.post(postURL, { email, name });
-                  if (response.data.success) {
+                  const axiosResponse = await axios.post(postURL, { email, name });
+                  if (axiosResponse.data.success) {
                     toast({
                       title: "Login successful",
                       description: "Welcome back to " + appName,
                     });
                     setIsLoading(false);
-                    sessionStorage.setItem('email', response.email);
-                    sessionStorage.setItem('mName', response.name);
+                    sessionStorage.setItem('email', email);
+                    sessionStorage.setItem('mName', name);
                     sessionStorage.setItem('auth', 'true');
-                    sessionStorage.setItem('uid', response.data.userData._id);
-                    sessionStorage.setItem('type', response.data.userData.type);
-                    sendEmail(response.email, response.name);
+                    sessionStorage.setItem('uid', axiosResponse.data.userData._id);
+                    sessionStorage.setItem('type', axiosResponse.data.userData.type);
+                    sendEmail(email, name);
                   } else {
                     setIsLoading(false);
-                    setError(response.data.message);
+                    setError(axiosResponse.data.message);
                   }
                 } catch (error) {
                   console.error(error);
