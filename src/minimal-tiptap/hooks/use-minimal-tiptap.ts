@@ -12,10 +12,7 @@ import {
   Image,
   HorizontalRule,
   CodeBlockLowlight,
-  Selection,
   Color,
-  UnsetAllMarks,
-  ResetMarksOnEnter,
   FileHandler
 } from '../extensions'
 import { cn } from '@/lib/utils'
@@ -151,11 +148,8 @@ const createExtensions = (placeholder: string) => [
   }),
   Color,
   TextStyle,
-  Selection,
   Typography,
-  UnsetAllMarks,
   HorizontalRule,
-  ResetMarksOnEnter,
   CodeBlockLowlight,
   Placeholder.configure({ placeholder: () => placeholder })
 ]
