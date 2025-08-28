@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/accordion';
 import { Content } from '@tiptap/react'
 import { MinimalTiptapEditor } from '../minimal-tiptap'
-import YouTube from 'react-youtube';
+// import YouTube from 'react-youtube';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, Home, Share, Download, MessageCircle, ClipboardCheck, Menu, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -946,7 +946,7 @@ const CoursePage = () => {
                   <div className="space-y-4">
                     {type === 'video & text course' ?
                       <div>
-                        <YouTube key={media} className='mb-5' videoId={media} opts={opts} />
+                        {/* <YouTube key={media} className='mb-5' videoId={media} opts={opts} /> */}
                       </div>
                       :
                       <div>
