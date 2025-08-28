@@ -1,7 +1,7 @@
 {
   "name": "aicourse",
   "version": "1.0.0",
-  "description": "AI Course Platform - Vercel Optimized",
+  "description": "AI Course Platform - Vercel Optimized (Build Fixed)",
   "type": "module",
   "scripts": {
     "dev": "vite",
