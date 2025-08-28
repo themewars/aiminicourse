@@ -28,7 +28,8 @@ const requiredEnvVars = [
   'API_KEY',
   'UNSPLASH_ACCESS_KEY',
   'EMAIL',
-  'PASSWORD'
+  'PASSWORD',
+  'ADMIN_TOKEN'
 ];
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -78,6 +79,37 @@ const transporter = nodemailer.createTransport({
 });
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const unsplash = createApi({ accessKey: process.env.UNSPLASH_ACCESS_KEY });
+
+// Admin authentication middleware
+const authenticateAdmin = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Access token required'
+      });
+    }
+    
+    // For now, we'll use a simple token check
+    // In production, you should verify JWT tokens or use proper session management
+    if (token !== process.env.ADMIN_TOKEN) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid or expired token'
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Admin authentication error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Authentication failed'
+    });
+  }
+};
 
 // Input validation middleware
 const validateRequiredFields = (requiredFields) => {
@@ -556,11 +588,72 @@ app.post('/api/forgot', validateRequiredFields(['email', 'name']), async (req, r
     }
 });
 
-// Admin: payments list
-app.get('/api/admin/payments', async (req, res) => {
+// Admin: payments list with pagination and filtering
+app.get('/api/admin/payments', authenticateAdmin, async (req, res) => {
     try {
-        const payments = await Payment.find().sort({ date: -1 });
-        res.json(payments);
+        const { page = 1, limit = 20, status, gateway, search, dateFilter } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        // Build filter object
+        let filter = {};
+        
+        if (status && status !== 'all') {
+            filter.status = status;
+        }
+        
+        if (gateway && gateway !== 'all') {
+            filter.gateway = gateway;
+        }
+        
+        if (search) {
+            filter.$or = [
+                { userEmail: { $regex: search, $options: 'i' } },
+                { transactionId: { $regex: search, $options: 'i' } },
+                { gateway: { $regex: search, $options: 'i' } },
+                { 'metadata.plan': { $regex: search, $options: 'i' } }
+            ];
+        }
+        
+        if (dateFilter && dateFilter !== 'all') {
+            const now = new Date();
+            let startDate;
+            
+            switch (dateFilter) {
+                case 'today':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                case 'week':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'month':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    break;
+                case 'year':
+                    startDate = new Date(now.getFullYear(), 0, 1);
+                    break;
+            }
+            
+            if (startDate) {
+                filter.date = { $gte: startDate };
+            }
+        }
+        
+        // Get total count for pagination
+        const total = await Payment.countDocuments(filter);
+        
+        // Get paginated results
+        const payments = await Payment.find(filter)
+            .sort({ date: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
+        
+        res.json({
+            success: true,
+            payments,
+            total,
+            page: parseInt(page),
+            totalPages: Math.ceil(total / parseInt(limit))
+        });
     } catch (error) {
         console.error('Error fetching payments:', error);
         res.status(500).json({ success: false, message: 'Failed to fetch payments' });
@@ -568,7 +661,7 @@ app.get('/api/admin/payments', async (req, res) => {
 });
 
 // Admin: refunds list
-app.get('/api/admin/refunds', async (req, res) => {
+app.get('/api/admin/refunds', authenticateAdmin, async (req, res) => {
     try {
         const refunds = await Refund.find().sort({ date: -1 });
         res.json(refunds);
@@ -579,7 +672,7 @@ app.get('/api/admin/refunds', async (req, res) => {
 });
 
 // Admin: process a refund
-app.post('/api/admin/refunds/process', async (req, res) => {
+app.post('/api/admin/refunds/process', authenticateAdmin, async (req, res) => {
     try {
         const { refundId, amount, reason, notes, status } = req.body;
         const update = {
@@ -600,7 +693,7 @@ app.post('/api/admin/refunds/process', async (req, res) => {
 });
 
 // Admin: bulk approve/reject refunds
-app.post('/api/admin/refunds/bulk', async (req, res) => {
+app.post('/api/admin/refunds/bulk', authenticateAdmin, async (req, res) => {
     try {
         const { refundIds, action, notes } = req.body;
         const status = action === 'approve' ? 'approved' : 'rejected';
@@ -612,19 +705,350 @@ app.post('/api/admin/refunds/bulk', async (req, res) => {
     }
 });
 
-// Admin: generate invoice (stub)
-app.post('/api/admin/invoices/generate', async (req, res) => {
+// Admin: bulk payment operations
+app.post('/api/admin/payments/bulk', authenticateAdmin, async (req, res) => {
+    try {
+        const { paymentIds, action, status, notes } = req.body;
+        
+        if (!paymentIds || !Array.isArray(paymentIds) || paymentIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Payment IDs array is required'
+            });
+        }
+        
+        let updateData = {};
+        
+        switch (action) {
+            case 'updateStatus':
+                if (!status || !['success', 'failed', 'pending', 'refunded'].includes(status)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Valid status is required for updateStatus action'
+                    });
+                }
+                updateData.status = status;
+                if (notes) updateData['metadata.notes'] = notes;
+                break;
+                
+            case 'delete':
+                // Only allow deletion of failed or pending payments
+                const paymentsToDelete = await Payment.find({
+                    _id: { $in: paymentIds },
+                    status: { $in: ['failed', 'pending'] }
+                });
+                
+                if (paymentsToDelete.length !== paymentIds.length) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Some payments cannot be deleted (only failed/pending payments can be deleted)'
+                    });
+                }
+                
+                await Payment.deleteMany({ _id: { $in: paymentIds } });
+                
+                return res.json({
+                    success: true,
+                    message: `${paymentsToDelete.length} payments deleted successfully`
+                });
+                
+            default:
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid action. Supported actions: updateStatus, delete'
+                });
+        }
+        
+        const result = await Payment.updateMany(
+            { _id: { $in: paymentIds } },
+            { $set: updateData }
+        );
+        
+        res.json({
+            success: true,
+            message: `${result.modifiedCount} payments updated successfully`
+        });
+    } catch (error) {
+        console.error('Error in bulk payment operations:', error);
+        res.status(500).json({ success: false, message: 'Failed to perform bulk operation' });
+    }
+});
+
+// Admin: delete payment
+app.delete('/api/admin/payments/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const payment = await Payment.findById(id);
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment not found'
+            });
+        }
+        
+        // Only allow deletion of failed or pending payments
+        if (payment.status === 'success') {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete successful payments'
+            });
+        }
+        
+        await Payment.findByIdAndDelete(id);
+        
+        res.json({
+            success: true,
+            message: 'Payment deleted successfully'
+        });
+    } catch (error) {
+        console.error('Error deleting payment:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete payment' });
+    }
+});
+
+// Admin: get payment analytics
+app.get('/api/admin/payments/analytics', authenticateAdmin, async (req, res) => {
+    try {
+        const { period = 'month' } = req.query;
+        
+        let startDate;
+        const now = new Date();
+        
+        switch (period) {
+            case 'week':
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'quarter':
+                startDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+                break;
+            case 'year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        }
+        
+        const analytics = await Payment.aggregate([
+            {
+                $match: {
+                    date: { $gte: startDate }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        status: '$status',
+                        gateway: '$gateway',
+                        month: { $month: '$date' },
+                        day: { $dayOfMonth: '$date' }
+                    },
+                    count: { $sum: 1 },
+                    totalAmount: { $sum: '$amount' }
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id.status',
+                    count: { $sum: '$count' },
+                    totalAmount: { $sum: '$totalAmount' },
+                    gateways: {
+                        $push: {
+                            gateway: '$_id.gateway',
+                            count: '$count',
+                            amount: '$totalAmount'
+                        }
+                    }
+                }
+            }
+        ]);
+        
+        res.json({
+            success: true,
+            analytics,
+            period,
+            startDate,
+            endDate: now
+        });
+    } catch (error) {
+        console.error('Error fetching payment analytics:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+    }
+});
+
+// Admin: update payment status
+app.put('/api/admin/payments/:id/status', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, notes } = req.body;
+        
+        if (!['success', 'failed', 'pending', 'refunded'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be one of: success, failed, pending, refunded'
+            });
+        }
+        
+        const payment = await Payment.findByIdAndUpdate(
+            id,
+            { 
+                status,
+                ...(notes && { 'metadata.notes': notes })
+            },
+            { new: true }
+        );
+        
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            payment,
+            message: 'Payment status updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating payment status:', error);
+        res.status(500).json({ success: false, message: 'Failed to update payment status' });
+    }
+});
+
+// Admin: generate invoice
+app.post('/api/admin/invoices/generate', authenticateAdmin, async (req, res) => {
     try {
         const { paymentId } = req.body;
-        const invoiceUrl = `${process.env.WEBSITE_URL || ''}/invoices/${paymentId}.pdf`;
-        res.json({ success: true, invoiceUrl });
+        
+        // Find the payment
+        const payment = await Payment.findById(paymentId);
+        if (!payment) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Payment not found' 
+            });
+        }
+        
+        // Generate invoice HTML content
+        const invoiceHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Invoice - ${payment.transactionId}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                    .invoice-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+                    .payment-info { background: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 30px; }
+                    .amount { font-size: 24px; font-weight: bold; color: #2c5aa0; }
+                    .status { padding: 5px 10px; border-radius: 3px; font-weight: bold; }
+                    .status.success { background: #d4edda; color: #155724; }
+                    .status.failed { background: #f8d7da; color: #721c24; }
+                    .status.pending { background: #fff3cd; color: #856404; }
+                    .status.refunded { background: #d1ecf1; color: #0c5460; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+                    th { background-color: #f2f2f2; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>INVOICE</h1>
+                    <h2>${process.env.COMPANY_NAME || 'AiCourse'}</h2>
+                </div>
+                
+                <div class="invoice-details">
+                    <div>
+                        <strong>Invoice Date:</strong> ${new Date().toLocaleDateString()}<br>
+                        <strong>Transaction ID:</strong> ${payment.transactionId}<br>
+                        <strong>Payment Date:</strong> ${new Date(payment.date).toLocaleDateString()}
+                    </div>
+                    <div>
+                        <strong>Customer:</strong><br>
+                        ${payment.userEmail}<br>
+                        Plan: ${payment.metadata?.plan || 'Unknown'}
+                    </div>
+                </div>
+                
+                <div class="payment-info">
+                    <h3>Payment Summary</h3>
+                    <table>
+                        <tr>
+                            <th>Description</th>
+                            <th>Amount</th>
+                        </tr>
+                        <tr>
+                            <td>${payment.metadata?.description || 'Course Subscription'}</td>
+                            <td class="amount">$${payment.amount.toFixed(2)} ${payment.currency}</td>
+                        </tr>
+                    </table>
+                    
+                    <div style="margin-top: 20px;">
+                        <strong>Payment Method:</strong> ${payment.paymentMethod}<br>
+                        <strong>Gateway:</strong> ${payment.gateway}<br>
+                        <strong>Status:</strong> 
+                        <span class="status ${payment.status}">${payment.status.toUpperCase()}</span>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 40px; color: #666;">
+                    <p>Thank you for your business!</p>
+                    <p>For support, contact: ${process.env.EMAIL || 'support@aicourse.com'}</p>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        // For now, return the HTML content
+        // In production, you should convert this to PDF using a library like puppeteer or html-pdf
+        res.json({ 
+            success: true, 
+            invoiceHtml,
+            message: 'Invoice generated successfully. Convert to PDF in production.'
+        });
     } catch (error) {
         console.error('Error generating invoice:', error);
         res.status(500).json({ success: false, message: 'Failed to generate invoice' });
     }
 });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Server is running',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+    console.error('Unhandled error:', error);
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' && { error: error.message })
+    });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Endpoint not found'
+    });
+});
+
 // Start server
 app.listen(process.env.PORT || 5000, () => {
     console.log(`Server is running on port ${process.env.PORT || 5000}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Health check: http://localhost:${process.env.PORT || 5000}/api/health`);
 });

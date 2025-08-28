@@ -33,7 +33,7 @@ import {
   CreditCard as CreditCardIcon,
   Globe,
   DollarSign,
-  HandCoins
+  Coins
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -739,7 +739,7 @@ const PaymentDetails = () => {
 
                     <TabsContent value="paystack">
                       <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                        <HandCoins className="h-12 w-12 text-purple-500" />
+                        <Coins className="h-12 w-12 text-purple-500" />
                         <p className="text-center">
                           You'll be redirected to paystack to complete your purchase securely.
                         </p>
