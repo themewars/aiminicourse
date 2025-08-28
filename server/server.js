@@ -43,6 +43,19 @@ const transporter = nodemailer.createTransport({
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const unsplash = createApi({ accessKey: process.env.UNSPLASH_ACCESS_KEY });
 
+// Root health route
+app.get('/', (req, res) => {
+    res.json({
+        message: 'AI Course API Server',
+        status: 'running',
+        endpoints: {
+            admin: '/api/admin/*',
+            users: '/api/users/*',
+            courses: '/api/courses/*'
+        }
+    });
+});
+
 //SCHEMA
 const adminSchema = new mongoose.Schema({
     email: { type: String, unique: true, required: true },
