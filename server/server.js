@@ -16,8 +16,8 @@ import axios from 'axios';
 import Stripe from 'stripe';
 import Flutterwave from 'flutterwave-node-v3';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables (override any pre-set env from PM2/shell)
+dotenv.config({ override: true });
 
 // Initialize services that need config
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -286,6 +286,72 @@ const Refund = mongoose.model('Refund', refundSchema);
 const BillingOperation = mongoose.model('BillingOperation', billingOperationSchema);
 
 //REQUEST
+
+// Admin dashboard summary
+app.get('/api/dashboard', async (req, res) => {
+    try {
+        const [userCount, courseCount, paymentAgg, refundsAgg] = await Promise.all([
+            User.estimatedDocumentCount(),
+            Course.estimatedDocumentCount(),
+            Payment.aggregate([
+                { $group: { _id: null, totalAmount: { $sum: "$amount" }, count: { $sum: 1 } } }
+            ]),
+            Refund.aggregate([
+                { $group: { _id: "$status", count: { $sum: 1 } } }
+            ])
+        ]);
+
+        const payments = paymentAgg && paymentAgg.length ? paymentAgg[0] : { totalAmount: 0, count: 0 };
+        const refundsByStatus = {};
+        refundsAgg.forEach(r => { refundsByStatus[r._id] = r.count; });
+
+        return res.json({
+            users: userCount || 0,
+            courses: courseCount || 0,
+            payments: {
+                count: payments.count || 0,
+                totalAmount: payments.totalAmount || 0
+            },
+            refunds: refundsByStatus
+        });
+    } catch (error) {
+        console.error('Error building dashboard:', error);
+        return res.status(500).json({ success: false, message: 'Failed to load dashboard' });
+    }
+});
+
+// Support POST for clients that send POST to fetch dashboard
+app.post('/api/dashboard', async (req, res) => {
+    try {
+        const [userCount, courseCount, paymentAgg, refundsAgg] = await Promise.all([
+            User.estimatedDocumentCount(),
+            Course.estimatedDocumentCount(),
+            Payment.aggregate([
+                { $group: { _id: null, totalAmount: { $sum: "$amount" }, count: { $sum: 1 } } }
+            ]),
+            Refund.aggregate([
+                { $group: { _id: "$status", count: { $sum: 1 } } }
+            ])
+        ]);
+
+        const payments = paymentAgg && paymentAgg.length ? paymentAgg[0] : { totalAmount: 0, count: 0 };
+        const refundsByStatus = {};
+        refundsAgg.forEach(r => { refundsByStatus[r._id] = r.count; });
+
+        return res.json({
+            users: userCount || 0,
+            courses: courseCount || 0,
+            payments: {
+                count: payments.count || 0,
+                totalAmount: payments.totalAmount || 0
+            },
+            refunds: refundsByStatus
+        });
+    } catch (error) {
+        console.error('Error building dashboard (POST):', error);
+        return res.status(500).json({ success: false, message: 'Failed to load dashboard' });
+    }
+});
 
 //SIGNUP
 app.post('/api/signup', async (req, res) => {

@@ -1,62 +1,66 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-  },
+export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
-      manifest: {
-        name: 'AiCourse',
-        short_name: 'AiCourse',
-        description: 'Ai Text To Course Generator',
-        theme_color: '#007BFF',
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.example\.com\/.*/i,
+            urlPattern: /^https:\/\/api\./,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
               expiration: {
-                maxEntries: 10,
+                maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24 // 24 hours
               }
             }
           }
         ]
+      },
+      manifest: {
+        name: 'AI Course Platform',
+        short_name: 'AI Course',
+        description: 'Learn AI with our comprehensive course platform',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          {
+            src: '/logo.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml'
+          }
+        ]
       }
-    }),
-    mode === 'development' &&
-    componentTagger(),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    })
+  ],
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+          tiptap: ['@tiptap/react', '@tiptap/starter-kit']
+        }
+      }
+    }
   },
-}));
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      }
+    }
+  }
+})
