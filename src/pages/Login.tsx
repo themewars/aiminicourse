@@ -176,7 +176,7 @@ const Login = () => {
               type='standard'
               width={400}
               onSuccess={async (credentialResponse) => {
-                const decoded = jwtDecode(credentialResponse.credential) as any;
+                const decoded = jwtDecode(credentialResponse.credential) as { email?: string; name?: string };
                 const email = decoded.email || '';
                 const name = decoded.name || '';
                 const postURL = serverURL + '/api/social';
