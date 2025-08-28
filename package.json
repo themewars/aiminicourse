@@ -49,7 +49,7 @@
     "@tiptap/extension-placeholder": "^2.1.0",
     "@tanstack/react-query": "^5.17.0",
     "react-helmet-async": "^2.0.4",
-    "@react-oauth/google": "^1.0.0",
+    "@react-oauth/google": "^0.12.2",
     "jwt-decode": "^4.0.0",
     "@greatsumini/react-facebook-login": "^1.0.0",
     "axios": "^1.6.0",
