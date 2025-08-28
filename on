@@ -1,0 +1,5 @@
+[33m859056b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix TypeScript errors with proper JWT payload typing
+[33m901de36[m 🔧 Fix remaining TypeScript issues: SessionStorage and function calls
+[33m5048d1f[m 🔧 Fix JWT payload type issues: Add proper type assertions and fix response handling
+[33m551b7b9[m 🔧 Fix TypeScript build: Add missing dependency, fix icon imports, and relax strict mode
+[33m1197397[m 🔧 Fix TypeScript: Add path aliases configuration for @/* imports

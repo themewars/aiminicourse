@@ -1,7 +1,7 @@
 {
-  "name": "aicourse",
+  "name": "ai-course-platform",
+  "description": "AI Course Platform - Vercel Ready with TypeScript fixes applied - Build 2024",
   "version": "1.0.0",
-  "description": "AI Course Platform - Vercel Optimized (Build Fixed)",
   "type": "module",
   "scripts": {
     "dev": "vite",

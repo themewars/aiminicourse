@@ -176,6 +176,7 @@ const Login = () => {
               type='standard'
               width={400}
               onSuccess={async (credentialResponse) => {
+                // JWT payload properly typed for TypeScript compatibility
                 const decoded = jwtDecode(credentialResponse.credential) as { email?: string; name?: string };
                 const email = decoded.email || '';
                 const name = decoded.name || '';
