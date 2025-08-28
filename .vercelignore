@@ -2,7 +2,7 @@
 .git
 .gitignore
 
-# Development files
+# Environment files
 .env
 .env.local
 .env.development
@@ -11,7 +11,7 @@
 *.log
 logs/
 
-# Dependencies (will be installed by Vercel)
+# Dependencies
 node_modules/
 
 # Build artifacts
