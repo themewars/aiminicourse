@@ -19,6 +19,24 @@ import Flutterwave from 'flutterwave-node-v3';
 // Load environment variables (override any pre-set env from PM2/shell)
 dotenv.config({ override: true });
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'STRIPE_SECRET_KEY', 
+  'FLUTTERWAVE_PUBLIC_KEY',
+  'FLUTTERWAVE_SECRET_KEY',
+  'API_KEY',
+  'UNSPLASH_ACCESS_KEY',
+  'EMAIL',
+  'PASSWORD'
+];
+
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingVars);
+  process.exit(1);
+}
+
 // Initialize services that need config
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const flw = new Flutterwave(process.env.FLUTTERWAVE_PUBLIC_KEY, process.env.FLUTTERWAVE_SECRET_KEY);
@@ -29,7 +47,25 @@ app.use(cors());
 const PORT = process.env.PORT;
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+// MongoDB connection with proper error handling
+mongoose.connect(process.env.MONGODB_URI, { 
+  useNewUrlParser: true, 
+  useUnifiedTopology: true 
+}).then(() => {
+  console.log('✅ Connected to MongoDB successfully');
+}).catch((error) => {
+  console.error('❌ MongoDB connection failed:', error);
+  process.exit(1);
+});
+
+// Handle MongoDB connection events
+mongoose.connection.on('error', (error) => {
+  console.error('❌ MongoDB connection error:', error);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ MongoDB disconnected');
+});
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -42,6 +78,34 @@ const transporter = nodemailer.createTransport({
 });
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const unsplash = createApi({ accessKey: process.env.UNSPLASH_ACCESS_KEY });
+
+// Input validation middleware
+const validateRequiredFields = (requiredFields) => {
+  return (req, res, next) => {
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+    next();
+  };
+};
+
+// Standardized error response helper
+const sendErrorResponse = (res, statusCode, message, error = null) => {
+  const response = {
+    success: false,
+    message: message
+  };
+  
+  if (process.env.NODE_ENV === 'development' && error) {
+    response.error = error.message;
+  }
+  
+  res.status(statusCode).json(response);
+};
 
 // Root health route
 app.get('/', (req, res) => {
@@ -354,7 +418,7 @@ app.post('/api/dashboard', async (req, res) => {
 });
 
 //SIGNUP
-app.post('/api/signup', async (req, res) => {
+app.post('/api/signup', validateRequiredFields(['email', 'mName', 'password', 'type']), async (req, res) => {
     const { email, mName, password, type } = req.body;
 
     try {
@@ -375,13 +439,13 @@ app.post('/api/signup', async (req, res) => {
             res.json({ success: true, message: 'Account created successfully', userId: newUser._id });
         }
     } catch (error) {
-        console.log('Error', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        console.error('Error in signup:', error);
+        sendErrorResponse(res, 500, 'Internal server error', error);
     }
 });
 
 //SIGNIN
-app.post('/api/signin', async (req, res) => {
+app.post('/api/signin', validateRequiredFields(['email', 'password']), async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -398,14 +462,14 @@ app.post('/api/signin', async (req, res) => {
         res.json({ success: false, message: 'Invalid email or password' });
 
     } catch (error) {
-        console.log('Error', error);
-        res.status(500).json({ success: false, message: 'Invalid email or password' });
+        console.error('Error in signin:', error);
+        sendErrorResponse(res, 500, 'Invalid email or password', error);
     }
 
 });
 
 //SIGNINSOCIAL
-app.post('/api/social', async (req, res) => {
+app.post('/api/social', validateRequiredFields(['email', 'name']), async (req, res) => {
     const { email, name } = req.body;
     let mName = name;
     let password = '';
@@ -431,14 +495,14 @@ app.post('/api/social', async (req, res) => {
         }
 
     } catch (error) {
-        console.log('Error', error);
-        res.status(500).json({ success: false, message: 'Internal Server Error' });
+        console.error('Error in social signin:', error);
+        sendErrorResponse(res, 500, 'Internal Server Error', error);
     }
 
 });
 
 //SEND MAIL
-app.post('/api/data', async (req, res) => {
+app.post('/api/data', validateRequiredFields(['html', 'to', 'subject']), async (req, res) => {
     const receivedData = req.body;
 
     try {
@@ -454,13 +518,13 @@ app.post('/api/data', async (req, res) => {
         const data = await transporter.sendMail(options);
         res.status(200).json(data);
     } catch (error) {
-        console.log('Error', error);
-        res.status(400).json(error);
+        console.error('Error sending email:', error);
+        sendErrorResponse(res, 400, 'Failed to send email', error);
     }
 });
 
 //FOROGT PASSWORD
-app.post('/api/forgot', async (req, res) => {
+app.post('/api/forgot', validateRequiredFields(['email', 'name']), async (req, res) => {
     const { email, name } = req.body;
 
     try {
@@ -487,8 +551,8 @@ app.post('/api/forgot', async (req, res) => {
         await transporter.sendMail(mailOptions);
         res.status(200).json({ success: true, message: 'Password reset email sent' });
     } catch (error) {
-        console.log('Error', error);
-        res.status(400).json({ success: false, message: 'Failed to send reset email' });
+        console.error('Error in forgot password:', error);
+        sendErrorResponse(res, 400, 'Failed to send reset email', error);
     }
 });
 
