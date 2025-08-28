@@ -41,7 +41,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-toast';
 import { amountInZarOne, amountInZarTwo, appLogo, appName, companyName, flutterwaveEnabled, flutterwavePlanIdOne, flutterwavePlanIdTwo, flutterwavePublicKey, FreeCost, FreeType, MonthCost, MonthType, paypalEnabled, paypalPlanIdOne, paypalPlanIdTwo, paystackEnabled, paystackPlanIdOne, paystackPlanIdTwo, razorpayEnabled, razorpayPlanIdOne, razorpayPlanIdTwo, serverURL, stripeEnabled, stripePlanIdOne, stripePlanIdTwo, YearCost, YearType } from '@/constants';
 import axios from 'axios';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+// import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 // Form validation schema
 const formSchema = z.object({
@@ -160,7 +160,7 @@ const PaymentDetails = () => {
           sessionStorage.setItem('method', 'flutterwave');
           sessionStorage.setItem('plan', plan.name);
           navigate('/payment-success/' + response.transaction_id);
-          closePaymentModal();
+          // closePaymentModal();
         },
         onClose: () => { },
       });
@@ -254,7 +254,7 @@ const PaymentDetails = () => {
     },
   };
 
-  const handleFlutterPayment = useFlutterwave(config);
+  // const handleFlutterPayment = useFlutterwave(config);
 
   async function startStripe() {
     let planId = stripePlanIdTwo;
