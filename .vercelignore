@@ -1,10 +1,27 @@
-node_modules
+# Git files
 .git
+.gitignore
+
+# Development files
 .env
 .env.local
+.env.development
+
+# Logs
 *.log
-dist
-build
-coverage
+logs/
+
+# Dependencies (will be installed by Vercel)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
 .DS_Store
 Thumbs.db

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "vercel-build": "node scripts/vercel-build.js",
+
     "start": "node server/server.js"
   },
   "dependencies": {
