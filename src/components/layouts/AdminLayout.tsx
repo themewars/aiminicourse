@@ -28,7 +28,6 @@ import {
   LogOut,
   Menu,
   FileEdit,
-  FileSliders,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -139,7 +138,7 @@ const AdminLayout = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Blogs" isActive={isActive('/admin/blogs')}>
                   <Link to="/admin/blogs" className={cn(isActive('/admin/blogs') && "text-primary")}>
-                    <FileSliders />
+                    <FileText />
                     <span>Manage Blogs</span>
                   </Link>
                 </SidebarMenuButton>
@@ -221,7 +220,7 @@ const AdminLayout = () => {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Billing Operations" isActive={isActive('/admin/billing-operations')}>
                   <Link to="/admin/billing-operations" className={cn(isActive('/admin/billing-operations') && "text-primary")}>
-                    <FileSliders />
+                    <FileText />
                     <span>Billing Operations</span>
                   </Link>
                 </SidebarMenuButton>
