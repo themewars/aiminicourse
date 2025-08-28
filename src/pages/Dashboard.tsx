@@ -12,7 +12,7 @@ import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import ShareOnSocial from 'react-share-on-social';
+// import ShareOnSocial from 'react-share-on-social';
 
 const Dashboard = () => {
 
@@ -260,7 +260,7 @@ const Dashboard = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="w-40">
-                            <ShareOnSocial
+                            {/* <ShareOnSocial
                               textToShare={sessionStorage.getItem('mName') + " shared you course on " + course.mainTopic}
                               link={websiteURL + '/shareable?id=' + course._id}
                               linkTitle={sessionStorage.getItem('mName') + " shared you course on " + course.mainTopic}
@@ -272,7 +272,7 @@ const Dashboard = () => {
                                 <Share className="h-4 w-4 mr-2" />
                                 Share
                               </DropdownMenuItem>
-                            </ShareOnSocial>
+                            </ShareOnSocial> */}
                             <DropdownMenuItem onClick={() => handleDeleteCourse(course._id)}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
