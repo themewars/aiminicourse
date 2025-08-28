@@ -269,12 +269,12 @@ const Signup = () => {
                       description: "Welcome back to " + appName,
                     });
                     setIsLoading(false);
-                    sessionStorage.setItem('email', decoded.email);
-                    sessionStorage.setItem('mName', decoded.name);
+                    sessionStorage.setItem('email', email);
+                    sessionStorage.setItem('mName', name);
                     sessionStorage.setItem('auth', 'true');
                     sessionStorage.setItem('uid', response.data.userData._id);
                     sessionStorage.setItem('type', response.data.userData.type);
-                    sendEmail(decoded.email, decoded.name);
+                    sendEmail(email);
                   } else {
                     setIsLoading(false);
                     setError(response.data.message);
@@ -327,7 +327,7 @@ const Signup = () => {
                     sessionStorage.setItem('auth', 'true');
                     sessionStorage.setItem('uid', axiosResponse.data.userData._id);
                     sessionStorage.setItem('type', axiosResponse.data.userData.type);
-                    sendEmail(email, name);
+                    sendEmail(email);
                   } else {
                     setIsLoading(false);
                     setError(axiosResponse.data.message);

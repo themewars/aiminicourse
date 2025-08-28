@@ -189,8 +189,8 @@ const Login = () => {
                       description: "Welcome back to " + appName,
                     });
                     setIsLoading(false);
-                    sessionStorage.setItem('email', decoded.email);
-                    sessionStorage.setItem('mName', decoded.name);
+                    sessionStorage.setItem('email', email);
+                    sessionStorage.setItem('mName', name);
                     sessionStorage.setItem('auth', 'true');
                     sessionStorage.setItem('uid', response.data.userData._id);
                     sessionStorage.setItem('type', response.data.userData.type);
