@@ -27,12 +27,10 @@
   "functions": {
     "api/**/*.js": {
       "runtime": "nodejs18.x",
-      "maxDuration": 30,
-      "memory": 1024
+      "maxDuration": 30
     }
   },
-  "regions": ["iad1", "bom1"],
-  "force": true,
+  "regions": ["iad1"],
   "cleanUrls": true,
   "env": {
     "MONGODB_URI": "@mongodb_uri",
