@@ -5,9 +5,20 @@ import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import { appName } from '@/constants';
+import { useAuth } from '@/contexts/AuthContext';
+import { LogOut, User, Settings } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import Logo from '../res/logo.svg';
 
 const Header = () => {
+  const { user, isAuthenticated, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -45,12 +56,40 @@ const Header = () => {
         {/* Call to Actions */}
         <div className="hidden md:flex items-center space-x-4">
           <ThemeToggle />
-          <Link to="/login">
-            <Button variant="ghost" size="sm">Login</Button>
-          </Link>
-          <Link to="/signup">
-            <Button size="sm" className="bg-primary hover:bg-primary/90 transition-colors">Get Started</Button>
-          </Link>
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <User className="h-4 w-4" />
+                  <span>{user?.mName}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard" className="flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm">Login</Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="sm" className="bg-primary hover:bg-primary/90 transition-colors">Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -86,12 +125,25 @@ const Header = () => {
           <a href="#how-it-works" className="text-base font-medium py-2">How It Works</a>
           <a href="#pricing" className="text-base font-medium py-2">Pricing</a>
           <div className="flex flex-col space-y-2 pt-2">
-            <Link to="/login">
-              <Button variant="outline" size="sm" className="w-full">Login</Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm" className="w-full">Get Started</Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="outline" size="sm" className="w-full">Dashboard</Button>
+                </Link>
+                <Button variant="outline" size="sm" className="w-full text-red-600" onClick={logout}>
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" size="sm" className="w-full">Login</Button>
+                </Link>
+                <Link to="/signup">
+                  <Button size="sm" className="w-full">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

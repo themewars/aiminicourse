@@ -25,9 +25,11 @@ import { appName, serverURL, websiteURL } from '@/constants';
 import Logo from '../../res/logo.svg';
 import { DownloadIcon } from '@radix-ui/react-icons';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 
 const DashboardLayout = () => {
+  const { user, isAuthenticated, logout } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -37,25 +39,32 @@ const DashboardLayout = () => {
   const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem('uid') === null) {
-      window.location.href = websiteURL + '/login';
+    if (!isAuthenticated) {
+      window.location.href = '/login';
+      return;
     }
+    
     async function dashboardData() {
-      const postURL = serverURL + `/api/dashboard`;
-      const response = await axios.post(postURL);
-      sessionStorage.setItem('adminEmail', response.data.admin.email);
-      if (response.data.admin.email === sessionStorage.getItem('email')) {
-        setAdmin(true);
+      try {
+        const postURL = serverURL + `/api/dashboard`;
+        const response = await axios.post(postURL);
+        sessionStorage.setItem('adminEmail', response.data.admin.email);
+        if (response.data.admin.email === user?.email) {
+          setAdmin(true);
+        }
+      } catch (error) {
+        console.error('Dashboard data error:', error);
       }
     }
+    
     if (sessionStorage.getItem('adminEmail')) {
-      if (sessionStorage.getItem('adminEmail') === sessionStorage.getItem('email')) {
+      if (sessionStorage.getItem('adminEmail') === user?.email) {
         setAdmin(true);
       }
     } else {
       dashboardData();
     }
-  }, []);
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -77,11 +86,12 @@ const DashboardLayout = () => {
 
   function Logout() {
     sessionStorage.clear();
+    logout();
     toast({
       title: "Logged Out",
       description: "You have logged out successfully",
     });
-    window.location.href = websiteURL + '/login';
+    window.location.href = '/login';
   }
 
   return (
