@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "start": "node server/server.js",
     "vercel-build": "tsc && vite build",
-    "force-deploy": "vercel --force"
+    "force-deploy": "vercel --force",
+    "postbuild": "echo '🚀 Build completed successfully!'"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
