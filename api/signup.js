@@ -73,6 +73,9 @@ const User = mongoose.models.User || mongoose.model('User', userSchema);
 const Admin = mongoose.models.Admin || mongoose.model('Admin', adminSchema);
 
 export default async function handler(req, res) {
+  console.log('🚀 Signup API called:', req.method, req.url);
+  console.log('📝 Request body:', req.body);
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
