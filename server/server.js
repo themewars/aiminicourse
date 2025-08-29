@@ -17,7 +17,10 @@ import Stripe from 'stripe';
 import Flutterwave from 'flutterwave-node-v3';
 
 // Load environment variables (override any pre-set env from PM2/shell)
-dotenv.config({ override: true });
+dotenv.config({ 
+  path: './.env',
+  override: true 
+});
 
 // Validate required environment variables
 const requiredEnvVars = [
@@ -585,6 +588,31 @@ app.post('/api/forgot', validateRequiredFields(['email', 'name']), async (req, r
     } catch (error) {
         console.error('Error in forgot password:', error);
         sendErrorResponse(res, 400, 'Failed to send reset email', error);
+    }
+});
+
+// Admin check endpoint
+app.get('/api/admin/check', async (req, res) => {
+    try {
+        const admin = await Admin.findOne().sort({ createdAt: 1 });
+        if (admin) {
+            res.json({
+                success: true,
+                admin: {
+                    email: admin.email,
+                    mName: admin.mName,
+                    type: admin.type
+                }
+            });
+        } else {
+            res.json({
+                success: false,
+                message: 'No admin found'
+            });
+        }
+    } catch (error) {
+        console.error('Error checking admin:', error);
+        res.status(500).json({ success: false, message: 'Failed to check admin' });
     }
 });
 

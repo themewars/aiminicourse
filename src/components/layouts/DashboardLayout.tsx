@@ -46,12 +46,17 @@ const DashboardLayout = () => {
     
     async function dashboardData() {
       try {
+        // Check admin status
+        const adminResponse = await axios.get(`${serverURL}/api/admin/check`);
+        if (adminResponse.data.success && adminResponse.data.admin.email === user?.email) {
+          setAdmin(true);
+          sessionStorage.setItem('adminEmail', adminResponse.data.admin.email);
+        }
+        
+        // Get dashboard data
         const postURL = serverURL + `/api/dashboard`;
         const response = await axios.post(postURL);
-        sessionStorage.setItem('adminEmail', response.data.admin.email);
-        if (response.data.admin.email === user?.email) {
-          setAdmin(true);
-        }
+        console.log('Dashboard data:', response.data);
       } catch (error) {
         console.error('Dashboard data error:', error);
       }
