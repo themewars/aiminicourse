@@ -5,14 +5,19 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "distDir": "dist",
+        "installCommand": "npm install --force",
+        "buildCommand": "npm run vercel-build"
       }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "dest": "/api/$1",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
     },
     {
       "src": "/(.*)",
@@ -25,6 +30,8 @@
       "maxDuration": 30
     }
   },
+  "regions": ["iad1"],
+  "force": true,
   "env": {
     "MONGODB_URI": "@mongodb_uri",
     "STRIPE_SECRET_KEY": "@stripe_secret_key",
