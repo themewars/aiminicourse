@@ -17,8 +17,9 @@ export default function handler(req, res) {
     message: 'Vercel API is running successfully! 🚀',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'production',
-    version: '1.0.2',
+    version: '1.0.3',
     forceDeploy: true,
+    buildId: 'force-redeploy-v3',
     debug: {
       userAgent: req.headers['user-agent'],
       ip: req.headers['x-forwarded-for'] || req.connection?.remoteAddress,
