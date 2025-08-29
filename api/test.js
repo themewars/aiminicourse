@@ -9,9 +9,8 @@ export default function handler(req, res) {
     success: true,
     message: 'Test API is working! 🎯',
     timestamp: new Date().toISOString(),
-    version: '1.0.1',
+    version: '1.0.2',
     forceDeploy: true,
-    buildId: 'force-redeploy-v3',
     testData: {
       random: Math.random(),
       date: new Date().toISOString(),
