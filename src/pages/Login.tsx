@@ -22,6 +22,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
+  console.log('Login component rendered!'); // Debug log
   const navigate = useNavigate();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);

@@ -34,6 +34,7 @@ const signupSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 
 const Signup = () => {
+  console.log('Signup component rendered!'); // Debug log
   const navigate = useNavigate();
   const { signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
