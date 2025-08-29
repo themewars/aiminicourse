@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "env": {
+    "MONGODB_URI": "@mongodb_uri",
+    "STRIPE_SECRET_KEY": "@stripe_secret_key",
+    "FLUTTERWAVE_PUBLIC_KEY": "@flutterwave_public_key",
+    "FLUTTERWAVE_SECRET_KEY": "@flutterwave_secret_key",
+    "API_KEY": "@api_key",
+    "UNSPLASH_ACCESS_KEY": "@unsplash_access_key",
+    "EMAIL": "@email",
+    "PASSWORD": "@password",
+    "ADMIN_TOKEN": "@admin_token"
+  }
+}
